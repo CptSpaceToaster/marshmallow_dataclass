@@ -436,21 +436,25 @@ def field_for_schema(
     return marshmallow.fields.Nested(nested, **metadata)
 
 
+class BaseSchema:  # type: ignore
+    @marshmallow.post_load
+    def make_data_class(self, data, **_):
+        return clazz(**data)
+
+
 def _base_schema(
     clazz: type, base_schema: Type[marshmallow.Schema] = None
 ) -> Type[marshmallow.Schema]:
     """
-    Base schema factory that creates a schema for `clazz` derived either from `base_schema`
-    or `BaseSchema`
+    Base schema factory that creates a schema for `clazz` derived either from `BaseSchema` and
+    `base_schema`
     """
     # Remove `type: ignore` when mypy handles dynamic base classes
     # https://github.com/python/mypy/issues/2813
-    class BaseSchema(base_schema or marshmallow.Schema):  # type: ignore
-        @marshmallow.post_load
-        def make_data_class(self, data, **_):
-            return clazz(**data)
+    class FactorySchema(BaseSchema, base_schema or marshmallow.Schema):  # type: ignore
+        pass
 
-    return BaseSchema
+    return FactorySchema
 
 
 def _get_field_default(field: dataclasses.Field):
